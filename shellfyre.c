@@ -359,6 +359,8 @@ int process_command(struct command_t *command)
 		}
 	}
 
+       
+
 	// TODO: Implement your custom commands here
 
 	pid_t pid = fork();
@@ -382,7 +384,15 @@ int process_command(struct command_t *command)
 		char *allEnv = getenv("PATH");
 
 		char *curDir = getenv("PWD");
-
+		char path[500];
+		if (strcmp(command->args[0], "gcc") == 0)
+       		 {
+         		 strcpy(path, "/usr/bin/");
+         		 strcat(path, command->args[0]);
+         	 	execv(path, command->args);
+        	 	 exit(0);
+       		 }
+       
 		char envArray[512][512];
 
 		char *token;
