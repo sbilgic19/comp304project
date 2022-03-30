@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <math.h>
 const char *sysname = "shellfyre";
 
 enum return_codes
@@ -315,7 +316,7 @@ int prompt(struct command_t *command)
 }
 
 int process_command(struct command_t *command);
-
+void awesome();
 int main()
 {
 	while (1)
@@ -358,6 +359,18 @@ int process_command(struct command_t *command)
 			return SUCCESS;
 		}
 	}
+	if(strcmp(command->name, "awesome1") == 0){
+		if(fork() == 0){
+			awesome();
+			exit(0);
+		}else{
+			if(!command->background){
+				wait(0);
+			}
+			return SUCCESS;
+		}
+		return SUCCESS;
+	}	
 
        
 
@@ -390,7 +403,7 @@ int process_command(struct command_t *command)
          		 strcpy(path, "/usr/bin/");
          		 strcat(path, command->args[0]);
          	 	execv(path, command->args);
-        	 	 exit(0);
+        	 	 return SUCCESS;
        		 }
        
 		char envArray[512][512];
@@ -433,3 +446,52 @@ int process_command(struct command_t *command)
 	printf("-%s: %s: command not found\n", sysname, command->name);
 	return UNKNOWN;
 }
+
+char **filesarch(char *ext, char *filename){
+	
+	
+}
+void awesome(){
+
+	int N = 100;
+  	int numberofguess = 1;
+	int number, guess = 0;
+	int MAX_GUESSES = 3;
+	
+	time_t t;
+
+	srand((unsigned) time(&t));
+	number = rand() & N;
+	printf("Guess a number between"
+           " 1 and %d\n",
+           N);
+
+	while(1){
+		printf("Enter your number: ");
+		scanf("%d", &guess);
+		
+		if(guess > number){
+			printf("Your guess is higher than the correct number. Please enter a lower number.\n");
+			printf("Your remaining chances are %d\n", MAX_GUESSES - numberofguess);
+			printf("Number of step taken is %d\n", numberofguess);
+		}else if(guess < number){
+			printf("Your guess is lower than the correct number. Please enter a higher number.\n");
+			printf("Your remaining chances are %d\n", MAX_GUESSES - numberofguess);
+			printf("Number of step taken is %d\n", numberofguess);
+		}else{
+			printf("Your guess is correct. You have won.\n");
+			printf("You guessed correctly in %d steps for the number\n", numberofguess);
+			break;
+		}
+		if(numberofguess >=  MAX_GUESSES){
+			printf("You lost, computer won.\n");
+			printf("I will not show you the correct number HAHAHA:D \n");
+			break;
+		}
+		numberofguess++;
+
+	
+
+	}
+  	
+}	
