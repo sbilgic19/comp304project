@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <math.h>
+#include <dirent.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 const char *sysname = "shellfyre";
 
 enum return_codes
@@ -89,7 +93,7 @@ int show_prompt()
 	return 0;
 }
 
-/**
+	/**
  * Parse a command string into a command struct
  * @param  buf     [description]
  * @param  command [description]
@@ -317,6 +321,8 @@ int prompt(struct command_t *command)
 
 int process_command(struct command_t *command);
 void awesome();
+void take(struct command_t *command);
+
 int main()
 {
 	while (1)
@@ -371,7 +377,20 @@ int process_command(struct command_t *command)
 		}
 		return SUCCESS;
 	}	
+	
+	if(strcmp(command->name, "take") == 0){
+		if(fork() == 0){
+			take(command);
 
+			
+		}else{
+			if(!command->background){
+				wait(0);
+			}
+			return SUCCESS;
+		}
+		return SUCCESS;
+	}		
        
 
 	// TODO: Implement your custom commands here
@@ -494,4 +513,42 @@ void awesome(){
 
 	}
   	
-}	
+}
+void take(struct command_t *command){
+	char *str = command->args[0];
+	//strcpy(str, command->args[0]);
+	
+	DIR* dir;
+	char *mydir = strtok(str, "/");
+	while(mydir != NULL){
+		//printf("%s\n", mydir);
+		char buff[100];
+		getcwd(buff,100);
+		strcat(buff, "/");
+		strcat(buff, mydir);
+		strcat(buff, "/");
+		//mkdir(buff, 0777);
+		//chdir(buff);
+		
+		dir = opendir(mydir);
+		if(dir){
+			chdir(buff);
+			//closedir(dir);	
+		}else{
+			mkdir(buff, 0777);
+			chdir(buff);
+		}
+		
+		mydir = strtok(NULL, "/");
+		
+	}
+	//char str2[100];
+	//strcpy(str2, "cd ");
+	//strcat(str2, str);	
+	//chdir(str2);
+	//chdir(str);
+	//command->name = "cd";
+	//command->args[0] = str;
+	//system(str2);
+	//process_command(command);
+}
