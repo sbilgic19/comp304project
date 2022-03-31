@@ -323,6 +323,115 @@ int process_command(struct command_t *command);
 void awesome();
 void take(struct command_t *command);
 
+void executeToDoList(char *args[]){
+        FILE *fp;
+        fp = fopen("todo.txt","a");
+        char *todoListArgs[] = {
+                "/usr/bin/cat",
+                "todo.txt",
+                0
+
+        };
+        char str[150];
+        char *todoDelArgs[5] = {
+                "/usr/bin/sed",
+                "-i",
+                str,
+                "todo.txt",
+                0
+        };
+
+        pid_t pid = fork();
+        if(pid < 0){
+                printf("Fork failed");
+        }
+        else if(pid == 0){
+                if(strcmp(args[0] , "-a") == 0) {
+                        char str[100];
+                        strcpy(str,args[1]);
+                        strcat(str, "\n");
+                        fprintf(fp,"%s", str);
+                }
+                else if(strcmp(args[0], "-l") == 0){
+                        execv(todoListArgs[0],todoListArgs);
+                        exit(0);
+                }else if(strcmp(args[0], "-d") == 0){
+                        strcpy(str, args[1]);
+                        char str2[150];
+                        strcpy(str2, "/");
+                        strcat(str2, str);
+                        strcat(str2, "/d");
+                        strcpy(todoDelArgs[2],str2);
+                        execv(todoDelArgs[0],todoDelArgs);
+                        exit(0);
+
+                }else{
+                        printf("You should choose what you want to do");
+                }
+
+        }
+        else
+                wait(NULL);
+
+        fclose(fp);
+
+}
+
+
+void executeJoker(){
+        //* * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send "Did you hear about the guy whose whole left side was cut off? He's all right now."
+
+        char cronCommand[200];
+        strcpy(cronCommand, "*/1 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify send ");
+        strcat(cronCommand, "\"");
+        printf("%s",cronCommand);
+        strcat(cronCommand, "$(curl https://icanhazdadjoke.com)");
+        strcat(cronCommand, "\"");
+        char command[512];
+        strcpy(command, "crontab -l | { cat; echo \"");
+        strcat(command,cronCommand);
+        strcat(command,"\"");
+        strcat(command, ";} | crontab -\n");
+
+
+
+        //*/1 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send \"$(curl https://icanhazdadjoke.com)\"\"; } | crontab -\n";
+        system(command);
+
+        FILE *fp;
+        fp = fopen("joke.txt", "w");
+
+
+
+
+        fprintf(fp, "1 * * * * /usr/bin/notify-send \"$(curl https://icanhazdadjoke.com)\"\n");
+        fclose(fp);
+       // pid_t pid1 = fork();
+
+        //char *cronArgs[] = {
+        //      "/usr/bin/crontab -e",
+        //      "joke.txt",
+        //      0
+        //};
+
+       // if(pid1 <0){
+        //      printf("Fork failed.");
+       // }
+        //else if(pid1 == 0){
+
+        //      execv("usr/bin/crontab", cronArgs);
+
+        //      remove("joke.txt");
+        //      exit(0);
+       // }
+       // else{
+       //       wait(NULL);
+      //  }
+
+
+}
+
+
 int main()
 {
 	while (1)
@@ -390,7 +499,16 @@ int process_command(struct command_t *command)
 			return SUCCESS;
 		}
 		return SUCCESS;
-	}		
+	}
+	if(strcmp(command->name, "todo") == 0){
+		executeToDoList(command->args);
+		return SUCCESS;
+	}
+
+	if(strcmp(command->name, "joker") == 0){
+		executeJoker();
+		return SUCCESS;
+	}	
        
 
 	// TODO: Implement your custom commands here
