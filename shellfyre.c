@@ -381,7 +381,7 @@ void executeToDoList(char *args[]){
 void executeJoker(){
  
         char cronCommand[200];
-        strcpy(cronCommand, "*/1 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send ");
+        strcpy(cronCommand, "*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send ");
         strcat(cronCommand, "'");
         printf("%s",cronCommand);
         strcat(cronCommand, "$(curl https://icanhazdadjoke.com)");
