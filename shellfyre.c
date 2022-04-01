@@ -379,14 +379,13 @@ void executeToDoList(char *args[]){
 
 
 void executeJoker(){
-        //* * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send "Did you hear about the guy whose whole left side was cut off? He's all right now."
-
+ 
         char cronCommand[200];
-        strcpy(cronCommand, "*/1 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify send ");
-        strcat(cronCommand, "\"");
+        strcpy(cronCommand, "*/1 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send ");
+        strcat(cronCommand, "'");
         printf("%s",cronCommand);
         strcat(cronCommand, "$(curl https://icanhazdadjoke.com)");
-        strcat(cronCommand, "\"");
+        strcat(cronCommand, "'");
         char command[512];
         strcpy(command, "crontab -l | { cat; echo \"");
         strcat(command,cronCommand);
@@ -395,38 +394,8 @@ void executeJoker(){
 
 
 
-        //*/1 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send \"$(curl https://icanhazdadjoke.com)\"\"; } | crontab -\n";
         system(command);
 
-        FILE *fp;
-        fp = fopen("joke.txt", "w");
-
-
-
-
-        fprintf(fp, "1 * * * * /usr/bin/notify-send \"$(curl https://icanhazdadjoke.com)\"\n");
-        fclose(fp);
-       // pid_t pid1 = fork();
-
-        //char *cronArgs[] = {
-        //      "/usr/bin/crontab -e",
-        //      "joke.txt",
-        //      0
-        //};
-
-       // if(pid1 <0){
-        //      printf("Fork failed.");
-       // }
-        //else if(pid1 == 0){
-
-        //      execv("usr/bin/crontab", cronArgs);
-
-        //      remove("joke.txt");
-        //      exit(0);
-       // }
-       // else{
-       //       wait(NULL);
-      //  }
 
 
 }
