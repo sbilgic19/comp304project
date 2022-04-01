@@ -598,7 +598,9 @@ int process_command(struct command_t *command)
 	printf("-%s: %s: command not found\n", sysname, command->name);
 	return UNKNOWN;
 }
-
+// for fsearch and nonrecursive_fsearch I got help from someone's code in stackoverflow
+// Here is the link: https://stackoverflow.com/questions/8149569/scan-a-directory-to-find-files-in-c
+// stackoverflow username of author: Andrey Atapin
 char **fsearch(char *dirname, char *extension,  char *filename){
 	
 	DIR *dir;
