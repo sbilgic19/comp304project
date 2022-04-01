@@ -11,8 +11,17 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 const char *sysname = "shellfyre";
+// for cdh command
+char arr[10][100];
+int directory_counter = 9;
+int arr_size = 0;
 
+
+// for filesearch command
+char *directories[100];
+int p = 0;
 enum return_codes
 {
 	SUCCESS = 0,
@@ -318,11 +327,14 @@ int prompt(struct command_t *command)
 	tcsetattr(STDIN_FILENO, TCSANOW, &backup_termios);
 	return SUCCESS;
 }
-
+void print_cdh();
+void cdh_command();
+void addir_tracker(char *s);
 int process_command(struct command_t *command);
 void awesome();
 void take(struct command_t *command);
-
+char **fsearch(char *dirname, char *extension, char *filename);
+char **nonrecursive_fsearch(char *dirname, char *extension, char *filename);
 void executeToDoList(char *args[]){
         FILE *fp;
         fp = fopen("todo.txt","a");
@@ -403,6 +415,9 @@ void executeJoker(){
 
 int main()
 {
+	char buf[100];
+	getcwd(buf, 100);
+	//addir_tracker(buf);
 	while (1)
 	{
 		struct command_t *command = malloc(sizeof(struct command_t));
@@ -437,6 +452,9 @@ int process_command(struct command_t *command)
 	{
 		if (command->arg_count > 0)
 		{
+			char b[100];
+			getcwd(b,100);
+			addir_tracker(b);
 			r = chdir(command->args[0]);
 			if (r == -1)
 				printf("-%s: %s: %s\n", sysname, command->name, strerror(errno));
@@ -454,16 +472,44 @@ int process_command(struct command_t *command)
 			return SUCCESS;
 		}
 		return SUCCESS;
+	}
+	if(strcmp(command->name, "filesearch")==0){
+		//if(fork() == 0){
+			printf("command0: %s, command1: %s\n", command->args[0], command->args[1]);
+			char *s = strstr(command->args[0],"r");
+			if(s != NULL){
+				printf("Recursive\n");
+				fsearch(".", command->args[0], command->args[1]);
+			}else{
+				printf("Nonrecursive\n");
+				nonrecursive_fsearch(".", command->args[0], command->args[1]);
+			}
+		//}else{
+			//if(!command->background){
+				//wait(NULL);
+			//}
+			//return SUCCESS;
+		//}
+		return SUCCESS;
 	}	
 	
 	if(strcmp(command->name, "take") == 0){
 		if(fork() == 0){
 			take(command);
-
-			
 		}else{
 			if(!command->background){
 				wait(0);
+			}
+			return SUCCESS;
+		}
+		return SUCCESS;
+	}
+	if(strcmp(command->name, "cdh")==0){
+		if(fork() == 0){
+			cdh_command();
+		}else{
+			if(!command->background){
+				wait(NULL);
 			}
 			return SUCCESS;
 		}
@@ -553,10 +599,70 @@ int process_command(struct command_t *command)
 	return UNKNOWN;
 }
 
-char **filesarch(char *ext, char *filename){
+char **fsearch(char *dirname, char *extension,  char *filename){
 	
-	
+	DIR *dir;
+    	struct dirent *dirp;
+    	dir=opendir(dirname);
+    	chdir(dirname);
+    	while((dirp=readdir(dir))!=NULL){
+        	if(dirp->d_type==4){
+            		if(strcmp(dirp->d_name, ".")==0 || strcmp(dirp->d_name, "..")==0){
+                		continue;
+            		}
+            		//printf("%s %s\n", "FOLDER", dirp->d_name);
+            		fsearch(dirp->d_name, extension, filename);
+        	} else{
+			char *str = strstr(dirp->d_name, filename);
+			if(str != NULL){
+				directories[p] = dirp->d_name;
+				p++;
+				if(strstr(extension, "o") != NULL){
+					if(fork() == 0){
+						execl("/usr/bin/xdg-open","xdg-open", dirp->d_name, (char *) 0);
+					}else{
+						wait(NULL);
+					}
+				}	
+				printf("/%s\n",dirp->d_name);
+			}
+        	}
+    }
+    chdir("..");
+    closedir(dir);
+    return directories;
 }
+char **nonrecursive_fsearch(char *dirname, char *extension, char *filename){
+	DIR *dir;
+	struct dirent *dirp;
+	dir = opendir(dirname);
+	chdir(dirname);
+	while((dirp=readdir(dir)) != NULL){
+		if(dirp->d_type==4){
+			if(strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0){
+				continue;
+			}
+		}else{
+			char *str = strstr(dirp->d_name, filename);
+			if(str != NULL){
+				directories[p] = dirp->d_name;
+				p++;
+				if(strstr(extension, "o") != NULL){
+					if(fork() == 0){
+						execl("/usr/bin/xdg-open", "xdg-open", dirp->d_name, (char *)0);
+					}else{
+						wait(NULL);
+					}
+				}
+				printf("./%s\n", dirp->d_name);
+			}
+		}
+	}
+	//chdir("..");
+	//closedir(dir);
+	return directories;
+}
+	
 void awesome(){
 
 	int N = 100;
@@ -611,19 +717,27 @@ void take(struct command_t *command){
 		//printf("%s\n", mydir);
 		char buff[100];
 		getcwd(buff,100);
+		
+		addir_tracker(buff);
 		strcat(buff, "/");
 		strcat(buff, mydir);
 		strcat(buff, "/");
 		//mkdir(buff, 0777);
 		//chdir(buff);
-		
+	
+
+		//char bu[100];
+		//getcwd(bu,100);
+		//addir_tracker(buff);
 		dir = opendir(mydir);
 		if(dir){
 			chdir(buff);
+			//addir_tracker(bu);
 			//closedir(dir);	
 		}else{
 			mkdir(buff, 0777);
 			chdir(buff);
+			//addir_tracker(bu);
 		}
 		
 		mydir = strtok(NULL, "/");
@@ -639,3 +753,86 @@ void take(struct command_t *command){
 	//system(str2);
 	//process_command(command);
 }
+void cdh_command(){
+	printf("--------------------------------------------------\n");
+	for(int i=0; i<arr_size; i++){
+		printf("%d - %s\n", i, arr[i]);
+	}
+	printf("--------------------------------------------------\n");
+	char bu[100];
+	getcwd(bu,100);
+	if(fork() == 0){
+       		if(arr_size == 0){
+                	printf("Warning you did not changed your directory before\n");
+                	return;
+        	}
+        	print_cdh();
+        	int c;
+        	printf("Select directory by letter or number: ");
+        	scanf("%d", &c);
+	
+		//char bu[100];
+		//getcwd(bu,100);
+		//addir_tracker(bu);
+        	if(c == 10){
+                	chdir(arr[9]);
+        	}else if(c == 9 || c == 'i'){
+                	chdir(arr[8]);
+        	}else if(c == 8 || c == 'h'){
+                	chdir(arr[7]);
+        	}else if(c == 7 || c == 'g'){
+                	chdir(arr[6]);
+        	}else if(c == 6  || c == 'f'){
+                	chdir(arr[5]);
+        	}else if(c == 5 || c == 'e'){
+                	chdir(arr[4]);
+        	}else if(c == 4  || c == 'd'){
+                	chdir(arr[3]);
+        	}else if(c == 3 || c == 'c'){
+                	chdir(arr[2]);
+        	}else if(c == 2 || c == 'b'){
+                	chdir(arr[1]);
+        	}else if(c == 1 || c == 'a'){
+                	chdir(arr[0]);
+       		}else{
+                	printf("No such number or character\n");
+		}
+		addir_tracker(bu);
+	}else{
+		wait(NULL);
+		//addir_tracker(bu);	
+	}
+
+}
+
+void addir_tracker(char *d){
+        if(arr_size < 10){
+                memcpy(arr[arr_size], d,100);
+		arr_size++;
+                //directory_counter--;
+        }else{
+
+                char new_arr[10][100];
+                for(int i=8; i!=0; i--){
+                        strcpy(new_arr[i+1], arr[i]);
+                }
+                for(int x=1; x<10; x++){
+                        strcpy(arr[x], new_arr[x]);
+                }
+                //arr = new_arr;
+                memcpy(arr[0], d,100);
+        }
+	
+}
+void print_cdh(){
+        int y = 96+arr_size; //ASCII num of a
+        char order = y;
+        int num = arr_size;
+        for(int i=0; i<arr_size; i++){
+                printf("%c %d) %s\n", order, num, arr[num-1]);
+                order--;
+                num--;
+        }
+
+}
+

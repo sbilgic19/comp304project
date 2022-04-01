@@ -1,1 +1,0 @@
-1 * * * * /usr/bin/notify-send "$(curl https://icanhazdadjoke.com)"
