@@ -504,6 +504,33 @@ int process_command(struct command_t *command)
 		}
 		return SUCCESS;
 	}
+	if(strcmp(command->name, "pstraverse")==0){
+		
+		char *a[] = {"make", NULL, NULL};
+		char *b[] = {"sudo","insmod", "my_module.ko",NULL};
+		char *d[] = {"sudo", "./my_module.o",command->args[0], NULL};
+		if(fork() == 0){
+
+			execv("/usr/bin/make",a);
+			if(fork() == 0){
+				execv("/usr/bin/sudo",b);
+				if(fork() == 0){
+					execv("/usr/bin/sudo", d);
+				}else{
+					wait(NULL);
+				}
+			}else{
+				wait(NULL);
+			}
+
+		}else{
+			wait(NULL);
+			char *c[] = {"sudo", "rmmod", "my_module.ko",NULL};
+			execv("/usr/bin/sudo", c);
+				
+		}
+		return SUCCESS;		
+	}
 	if(strcmp(command->name, "cdh")==0){
 		if(fork() == 0){
 			cdh_command();
@@ -763,7 +790,7 @@ void cdh_command(){
 	printf("--------------------------------------------------\n");
 	char bu[100];
 	getcwd(bu,100);
-	if(fork() == 0){
+	//if(fork() == 0){
        		if(arr_size == 0){
                 	printf("Warning you did not changed your directory before\n");
                 	return;
@@ -800,10 +827,10 @@ void cdh_command(){
                 	printf("No such number or character\n");
 		}
 		addir_tracker(bu);
-	}else{
-		wait(NULL);
+	//}else{
+		//wait(NULL);
 		//addir_tracker(bu);	
-	}
+	//}
 
 }
 
