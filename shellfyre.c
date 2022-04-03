@@ -328,12 +328,12 @@ int prompt(struct command_t *command)
 	return SUCCESS;
 }
 void print_cdh();
-void cdh_command();
+int cdh_command();
 void addir_tracker(char *s);
 int process_command(struct command_t *command);
 void awesome();
 void take(struct command_t *command);
-char **fsearch(char *dirname, char *extension, char *filename);
+char **fsearch(char *dirname, char *extension, char *filename, char *curdir);
 char **nonrecursive_fsearch(char *dirname, char *extension, char *filename);
 void executeToDoList(char *args[]){
         FILE *fp;
@@ -474,22 +474,21 @@ int process_command(struct command_t *command)
 		return SUCCESS;
 	}
 	if(strcmp(command->name, "filesearch")==0){
-		//if(fork() == 0){
-			printf("command0: %s, command1: %s\n", command->args[0], command->args[1]);
+		if(fork() == 0){
 			char *s = strstr(command->args[0],"r");
 			if(s != NULL){
-				printf("Recursive\n");
-				fsearch(".", command->args[0], command->args[1]);
+				char curdir[250];
+				getcwd(curdir,250);
+				fsearch(".", command->args[0], command->args[1],curdir);
 			}else{
-				printf("Nonrecursive\n");
 				nonrecursive_fsearch(".", command->args[0], command->args[1]);
 			}
-		//}else{
-			//if(!command->background){
-				//wait(NULL);
-			//}
-			//return SUCCESS;
-		//}
+		}else{
+			if(!command->background){
+				wait(NULL);
+			}
+			return SUCCESS;
+		}
 		return SUCCESS;
 	}	
 	
@@ -506,7 +505,7 @@ int process_command(struct command_t *command)
 	}
 	if(strcmp(command->name, "pstraverse")==0){
 		
-		char *a[] = {"make", NULL, NULL};
+		char *a[] = {"make", NULL};
 		char *b[] = {"sudo","insmod", "my_module.ko",NULL};
 		char *d[] = {"sudo", "./my_module.o",command->args[0], NULL};
 		if(fork() == 0){
@@ -514,6 +513,7 @@ int process_command(struct command_t *command)
 			execv("/usr/bin/make",a);
 			if(fork() == 0){
 				execv("/usr/bin/sudo",b);
+				printf("It is done successfully.\n");
 				if(fork() == 0){
 					execv("/usr/bin/sudo", d);
 				}else{
@@ -532,6 +532,8 @@ int process_command(struct command_t *command)
 		return SUCCESS;		
 	}
 	if(strcmp(command->name, "cdh")==0){
+		
+		
 		if(fork() == 0){
 			cdh_command();
 		}else{
@@ -541,6 +543,10 @@ int process_command(struct command_t *command)
 			return SUCCESS;
 		}
 		return SUCCESS;
+		/*
+		cdh_command();
+		return SUCCESS;
+		*/
 	}
 	if(strcmp(command->name, "todo") == 0){
 		executeToDoList(command->args);
@@ -628,19 +634,22 @@ int process_command(struct command_t *command)
 // for fsearch and nonrecursive_fsearch I got help from someone's code in stackoverflow
 // Here is the link: https://stackoverflow.com/questions/8149569/scan-a-directory-to-find-files-in-c
 // stackoverflow username of author: Andrey Atapin
-char **fsearch(char *dirname, char *extension,  char *filename){
+char **fsearch(char *dirname, char *extension,  char *filename, char *curdir){
 	
 	DIR *dir;
     	struct dirent *dirp;
     	dir=opendir(dirname);
     	chdir(dirname);
+
     	while((dirp=readdir(dir))!=NULL){
         	if(dirp->d_type==4){
-            		if(strcmp(dirp->d_name, ".")==0 || strcmp(dirp->d_name, "..")==0){
+            		if(strcmp(dirp->d_name, ".")==0 || strcmp(dirp->d_name, "..")==0 || strcmp(dirp->d_name,"objects")==0 || strcmp(dirp->d_name, "refs")==0 ){
                 		continue;
             		}
             		//printf("%s %s\n", "FOLDER", dirp->d_name);
-            		fsearch(dirp->d_name, extension, filename);
+			//printf("%s\n", dirp->d_name);
+			//dirlevel++;
+            		fsearch(dirp->d_name, extension, filename, curdir);
         	} else{
 			char *str = strstr(dirp->d_name, filename);
 			if(str != NULL){
@@ -652,8 +661,15 @@ char **fsearch(char *dirname, char *extension,  char *filename){
 					}else{
 						wait(NULL);
 					}
-				}	
-				printf("/%s\n",dirp->d_name);
+				}
+				char b[100];
+				getcwd(b,100);
+				strcat(b, "/");
+				strcat(b, dirp->d_name);
+				char *p = b;
+				p += strlen(curdir);
+				printf(".%s\n",p);
+				
 			}
         	}
     }
@@ -782,55 +798,85 @@ void take(struct command_t *command){
 	//system(str2);
 	//process_command(command);
 }
-void cdh_command(){
+int cdh_command(){
+	
+	
 	printf("--------------------------------------------------\n");
 	for(int i=0; i<arr_size; i++){
 		printf("%d - %s\n", i, arr[i]);
 	}
 	printf("--------------------------------------------------\n");
+	
 	char bu[100];
 	getcwd(bu,100);
-	//if(fork() == 0){
+	pid_t pid;
+	int fd[2];
+	pipe(fd);
+	if((pid = fork()) == 0){
        		if(arr_size == 0){
                 	printf("Warning you did not changed your directory before\n");
-                	return;
+                	return -1;
         	}
         	print_cdh();
-        	int c;
+        	char c;
+		int index;
         	printf("Select directory by letter or number: ");
-        	scanf("%d", &c);
-	
+        	scanf("%c", &c);
+		index = (int) c;
+
+		if(index < 107 && index > 96){
+			index -= 97;
+		}else if(index < 58 && index > 47){
+			index -= 48;
+		}
+
+		write(fd[1], &index, sizeof(index));
+		close(fd[1]);
+
+		exit(0);
 		//char bu[100];
 		//getcwd(bu,100);
 		//addir_tracker(bu);
-        	if(c == 10){
+	
+		//addir_tracker(bu);
+	}else{
+		wait(NULL);
+		//addir_tracker(bu);
+		int cc;
+	       	read(fd[0], &cc, sizeof(cc));
+		close(fd[0]);
+		
+		printf("CC: %d\n", cc);	
+		chdir(arr[cc-1]);
+		/*
+        	if(cc == 10){
                 	chdir(arr[9]);
-        	}else if(c == 9 || c == 'i'){
+        	}else if(cc =='9' || cc == 'i'){
                 	chdir(arr[8]);
-        	}else if(c == 8 || c == 'h'){
+        	}else if(cc == '8' || cc == 'h'){
                 	chdir(arr[7]);
-        	}else if(c == 7 || c == 'g'){
+        	}else if(cc == '7' || cc == 'g'){
                 	chdir(arr[6]);
-        	}else if(c == 6  || c == 'f'){
+        	}else if(cc == '6'  || cc == 'f'){
                 	chdir(arr[5]);
-        	}else if(c == 5 || c == 'e'){
+        	}else if(cc =='5' || cc == 'e'){
                 	chdir(arr[4]);
-        	}else if(c == 4  || c == 'd'){
+        	}else if(cc == '4'  || cc == 'd'){
                 	chdir(arr[3]);
-        	}else if(c == 3 || c == 'c'){
+        	}else if(cc == '3' || cc == 'c'){
                 	chdir(arr[2]);
-        	}else if(c == 2 || c == 'b'){
+        	}else if(cc == '2' || cc == 'b'){
                 	chdir(arr[1]);
-        	}else if(c == 1 || c == 'a'){
+        	}else if(cc == '1' || cc == 'a'){
                 	chdir(arr[0]);
        		}else{
                 	printf("No such number or character\n");
+			return -1;
 		}
-		addir_tracker(bu);
-	//}else{
-		//wait(NULL);
-		//addir_tracker(bu);	
-	//}
+		*/
+		addir_tracker(bu);	
+	}
+	return 1;
 
 }
 
@@ -840,6 +886,19 @@ void addir_tracker(char *d){
 		arr_size++;
                 //directory_counter--;
         }else{
+		char new_arr[10][100];
+		for(int i=0; i<9; i++){
+			strcpy(new_arr[i], arr[i+1]);
+		}
+		
+		memcpy(new_arr[9], d, 100);
+		for(int x = 0; x <10; x++){
+			strcpy(arr[x], new_arr[x]);
+		}	
+	}
+	
+	/*
+	else{
 
                 char new_arr[10][100];
                 for(int i=8; i!=0; i--){
@@ -851,6 +910,7 @@ void addir_tracker(char *d){
                 //arr = new_arr;
                 memcpy(arr[0], d,100);
         }
+	*/
 	
 }
 void print_cdh(){
@@ -864,4 +924,3 @@ void print_cdh(){
         }
 
 }
-

@@ -12,8 +12,8 @@
 
 
 
-/*
 
+/*
 for_each_process(task)
 {
    printk("Name: %s PID: [%d]\n", task->comm, task->pid);
@@ -53,5 +53,5 @@ module_init(task_lister_init);
 module_exit(task_lister_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Aditya");
-MODULE_DESCRIPTION("The character device driver");
+//MODULE_AUTHOR("Aditya");
+//MODULE_DESCRIPTION("The character device driver");
