@@ -931,7 +931,10 @@ void print_cdh(){
         }
 
 }
-
+/*	For part3 and Makefile we got help from another users repository in github.
+ *	the link for the repository is : https://github.com/berkaybarlas/Operating-Systems/tree/master/Project-1
+ *
+ */
 int my_module(char *args[], int *ppid){
 	
 	pid_t child;
