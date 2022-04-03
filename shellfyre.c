@@ -390,29 +390,6 @@ void executeToDoList(char *args[]){
 }
 
 
-void executeJoker(){
- 
-        char cronCommand[200];
-        strcpy(cronCommand, "*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send ");
-        strcat(cronCommand, "'");
-        printf("%s",cronCommand);
-        strcat(cronCommand, "$(curl https://icanhazdadjoke.com)");
-        strcat(cronCommand, "'");
-        char command[512];
-        strcpy(command, "crontab -l | { cat; echo \"");
-        strcat(command,cronCommand);
-        strcat(command,"\"");
-        strcat(command, ";} | crontab -\n");
-
-
-
-        system(command);
-
-
-
-}
-
-
 int main()
 {
 	char buf[100];
@@ -549,14 +526,34 @@ int process_command(struct command_t *command)
 		*/
 	}
 	if(strcmp(command->name, "todo") == 0){
-		executeToDoList(command->args);
+		if(fork() == 0){
+			executeToDoList(command->args);
+		}else {
+			if(!command->background){
+				wait(NULL);
+			}
+			return SUCCESS;
+		}
 		return SUCCESS;
 	}
 
 	if(strcmp(command->name, "joker") == 0){
-		executeJoker();
-		return SUCCESS;
-	}	
+
+                if(fork() == 0){
+                        char **args = malloc(sizeof(char) * 400);
+                        FILE *fp;
+                        fp = fopen("joke.txt", "w");
+                        fprintf(fp, "*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send \"$(curl --silent https://icanhazdadjoke.com/ | cat)\"\n");
+                        fclose(fp);
+                        execl("/usr/bin/crontab","crontab", "joke.txt",NULL);
+                }else{
+                        if(!command->background){
+                                wait(NULL);
+                        }
+                        return SUCCESS;
+                }
+                return SUCCESS;
+        }	
        
 
 	// TODO: Implement your custom commands here
