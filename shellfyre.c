@@ -1,3 +1,8 @@
+/* Serkan Berk Bilgiç - 71571
+ * Ali Oktay - 72007
+ */
+
+
 #include <unistd.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -18,7 +23,9 @@ char arr[10][100];
 int directory_counter = 9;
 int arr_size = 0;
 
+int ppid = 10;
 
+#define MODULE "my_module"
 // for filesearch command
 char *directories[100];
 int p = 0;
@@ -327,6 +334,7 @@ int prompt(struct command_t *command)
 	tcsetattr(STDIN_FILENO, TCSANOW, &backup_termios);
 	return SUCCESS;
 }
+int my_module(char *args[], int *ppid);
 void print_cdh();
 int cdh_command();
 void addir_tracker(char *s);
@@ -481,10 +489,11 @@ int process_command(struct command_t *command)
 		return SUCCESS;
 	}
 	if(strcmp(command->name, "pstraverse")==0){
-		
+		/*
 		char *a[] = {"make", NULL};
-		char *b[] = {"sudo","insmod", "my_module.ko",NULL};
-		char *d[] = {"sudo", "./my_module.o",command->args[0], NULL};
+		int processID = 0;
+		char *b[] = {"/usr/bin/sudo","insmod", "my_module.ko", processID, 0};
+		char *d[] = {"/usr/bin/sudo", "./my_module.o",command->args[0], NULL};
 		if(fork() == 0){
 
 			execv("/usr/bin/make",a);
@@ -506,7 +515,10 @@ int process_command(struct command_t *command)
 			execv("/usr/bin/sudo", c);
 				
 		}
-		return SUCCESS;		
+		return SUCCESS;	
+		*/
+		my_module(command->args, &ppid);
+		return SUCCESS;
 	}
 	if(strcmp(command->name, "cdh")==0){
 		
@@ -540,7 +552,6 @@ int process_command(struct command_t *command)
 	if(strcmp(command->name, "joker") == 0){
 
                 if(fork() == 0){
-                        char **args = malloc(sizeof(char) * 400);
                         FILE *fp;
                         fp = fopen("joke.txt", "w");
                         fprintf(fp, "*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send \"$(curl --silent https://icanhazdadjoke.com/ | cat)\"\n");
@@ -797,13 +808,13 @@ void take(struct command_t *command){
 }
 int cdh_command(){
 	
-	
+	/*	
 	printf("--------------------------------------------------\n");
 	for(int i=0; i<arr_size; i++){
 		printf("%d - %s\n", i, arr[i]);
 	}
 	printf("--------------------------------------------------\n");
-	
+	*/
 	char bu[100];
 	getcwd(bu,100);
 	pid_t pid;
@@ -843,7 +854,6 @@ int cdh_command(){
 	       	read(fd[0], &cc, sizeof(cc));
 		close(fd[0]);
 		
-		printf("CC: %d\n", cc);	
 		chdir(arr[cc-1]);
 		/*
         	if(cc == 10){
@@ -920,4 +930,30 @@ void print_cdh(){
                 num--;
         }
 
+}
+
+int my_module(char *args[], int *ppid){
+	
+	pid_t child;
+	int pid;
+	*ppid = pid;
+	if(fork() == 0){
+		char *a[] = {"/usr/bin/sudo", "rmmod", MODULE, 0};
+		execv(a[0], a);
+	}else{
+		wait(NULL);
+		char processID[32];
+		sprintf(processID, "processID=%d", pid);
+
+		char *i[] = {"/usr/bin/sudo","insmod", "my_module.ko", processID, 0};
+
+		int child = fork();
+		if(child == 0){
+			execv(i[0], i);
+		}else{
+			wait(NULL);
+		}
+
+	}
+	return 0;
 }
