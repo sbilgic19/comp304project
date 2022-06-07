@@ -266,6 +266,7 @@ FAT_FILESYSTEM * mini_fat_load(const char *filename) {
                 if(token != NULL){
                         fat->block_map[i] = atoi(token);
 			if(atoi(token) == 1){
+				s++;
 				fseek(fat_fd, i*block_size, SEEK_CUR);
 				fread(buff, 1,30, fat_fd);
 				printf("b: %s\n",buff);
@@ -278,7 +279,7 @@ FAT_FILESYSTEM * mini_fat_load(const char *filename) {
 		
 	char *t;
 	
-	for(int k=0; k<s-3; k++){
+	for(int k=0; k<s-1; k++){
 		fread(buffer, 1, 30,fat_fd);
 		printf("Buffer: %s\n", buffer);
 		t = strtok(buffer, " ");
